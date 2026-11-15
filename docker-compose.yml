@@ -22,7 +22,14 @@ services:
     ports: ["5003:5000"]
     environment:
       DATABASE_URL: postgresql://user:pass@db_notifications:5432/notifications
-    depends_on: [db_notifications]
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+    depends_on: [db_notifications, mailhog]
+    networks: [backend]
+
+  mailhog:
+    image: mailhog/mailhog
+    ports: ["8025:8025"]
     networks: [backend]
 
   db_catalogue:

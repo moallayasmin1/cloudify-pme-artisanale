@@ -1,9 +1,12 @@
-import os, time
+import os, time, smtplib
+from email.message import EmailMessage
 import psycopg2
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 DATABASE_URL = os.environ["DATABASE_URL"]
+SMTP_HOST = os.environ.get("SMTP_HOST", "mailhog")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "1025"))
 
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
@@ -22,15 +25,38 @@ def init_db():
         id SERIAL PRIMARY KEY, message TEXT, created_at TIMESTAMP DEFAULT NOW())""")
     conn.commit(); cur.close(); conn.close()
 
+def send_email(to, subject, body):
+    msg = EmailMessage()
+    msg["From"] = "boutique@pme-artisanale.tn"
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.set_content(body)
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=5) as s:
+        s.send_message(msg)
+
 @app.route("/notify", methods=["POST"])
 def notify():
     data = request.get_json(force=True)
     message = data.get("message", "")
+    email = data.get("email")
+
     conn = get_conn(); cur = conn.cursor()
     cur.execute("INSERT INTO notifications (message) VALUES (%s)", (message,))
     conn.commit(); cur.close(); conn.close()
     print(f"[NOTIFICATION] {message}", flush=True)
-    return jsonify({"status": "sent", "message": message}), 201
+
+    email_status = "non demandé"
+    if email:
+        try:
+            send_email(email, f"Confirmation de commande #{data.get('order_id', '')}",
+                       f"Bonjour,\n\n{message}.\nMerci pour votre achat !\n\nPME artisanale")
+            email_status = "envoyé"
+            print(f"[EMAIL] envoyé à {email}", flush=True)
+        except Exception as e:
+            email_status = "échec"
+            print("[EMAIL] échec:", e, flush=True)
+
+    return jsonify({"status": "sent", "message": message, "email": email_status}), 201
 
 @app.route("/notifications")
 def list_notifications():

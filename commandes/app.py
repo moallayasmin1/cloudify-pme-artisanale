@@ -23,31 +23,38 @@ def init_db():
     cur.execute("""CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY, product_id INT, quantity INT,
         customer TEXT, created_at TIMESTAMP DEFAULT NOW())""")
+    cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email TEXT")
     conn.commit(); cur.close(); conn.close()
 
 @app.route("/orders", methods=["POST"])
 def create_order():
     data = request.get_json(force=True)
     product_id = data.get("product_id")
-    quantity = data.get("quantity", 1)
+    quantity = int(data.get("quantity", 1))
     customer = data.get("customer", "client")
+    email = data.get("email")
 
-    # Communication Commandes -> Catalogue
-    products = requests.get(f"{CATALOGUE_URL}/products", timeout=5).json()
-    if not any(p["id"] == product_id for p in products):
+    # Communication Commandes -> Catalogue (disponibilité + réservation du stock)
+    r = requests.post(f"{CATALOGUE_URL}/products/{product_id}/reserve",
+                      json={"quantity": quantity}, timeout=5)
+    if r.status_code == 404:
         return jsonify({"error": "produit introuvable"}), 404
+    if r.status_code == 409:
+        return jsonify({"error": "stock insuffisant"}), 409
 
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("INSERT INTO orders (product_id, quantity, customer) VALUES (%s,%s,%s) RETURNING id",
-                (product_id, quantity, customer))
+    cur.execute("""INSERT INTO orders (product_id, quantity, customer, customer_email)
+                   VALUES (%s,%s,%s,%s) RETURNING id""",
+                (product_id, quantity, customer, email))
     order_id = cur.fetchone()[0]
     conn.commit(); cur.close(); conn.close()
 
     # Communication Commandes -> Notifications
     try:
         requests.post(f"{NOTIFICATIONS_URL}/notify",
-                      json={"message": f"Nouvelle commande #{order_id} de {customer}"},
-                      timeout=5)
+                      json={"message": f"Nouvelle commande #{order_id} de {customer}",
+                            "email": email, "order_id": order_id},
+                      timeout=10)
     except requests.RequestException as e:
         print("Notification échouée:", e, flush=True)
 
@@ -56,8 +63,8 @@ def create_order():
 @app.route("/orders")
 def list_orders():
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("SELECT id, product_id, quantity, customer FROM orders ORDER BY id")
-    rows = [{"id": r[0], "product_id": r[1], "quantity": r[2], "customer": r[3]}
+    cur.execute("SELECT id, product_id, quantity, customer, customer_email FROM orders ORDER BY id")
+    rows = [{"id": r[0], "product_id": r[1], "quantity": r[2], "customer": r[3], "email": r[4]}
             for r in cur.fetchall()]
     cur.close(); conn.close()
     return jsonify(rows)
