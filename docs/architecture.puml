@@ -6,11 +6,12 @@ actor "Client" as Client
 
 rectangle "Docker Engine" {
     package "Réseau backend" {
-        
+
         component "Catalogue\nFlask :5001" as Catalogue
         component "Commandes\nFlask :5002" as Commandes
         component "Notifications\nFlask :5003" as Notifications
-        
+        component "MailHog\nSMTP :1025 / Web :8025" as MailHog
+
         database "db_catalogue\nPostgreSQL" as DB_Cat
         database "db_commandes\nPostgreSQL" as DB_Cmd
         database "db_notifications\nPostgreSQL" as DB_Notif
@@ -19,8 +20,9 @@ rectangle "Docker Engine" {
 
 Client --> Commandes : "POST /orders"
 Client --> Catalogue : "GET /products"
-Commandes .left.> Catalogue : "Vérifie produit"
+Commandes .left.> Catalogue : "Réserve le stock"
 Commandes .right.> Notifications : "POST /notify"
+Notifications .down.> MailHog : "Email (SMTP)"
 Catalogue --> DB_Cat
 Commandes --> DB_Cmd
 Notifications --> DB_Notif
