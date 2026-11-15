@@ -1,0 +1,61 @@
+services:
+  catalogue:
+    build: ./catalogue
+    ports: ["5001:5000"]
+    environment:
+      DATABASE_URL: postgresql://user:pass@db_catalogue:5432/catalogue
+    depends_on: [db_catalogue]
+    networks: [backend]
+
+  commandes:
+    build: ./commandes
+    ports: ["5002:5000"]
+    environment:
+      DATABASE_URL: postgresql://user:pass@db_commandes:5432/commandes
+      NOTIFICATIONS_URL: http://notifications:5000
+      CATALOGUE_URL: http://catalogue:5000
+    depends_on: [db_commandes, notifications, catalogue]
+    networks: [backend]
+
+  notifications:
+    build: ./notifications
+    ports: ["5003:5000"]
+    environment:
+      DATABASE_URL: postgresql://user:pass@db_notifications:5432/notifications
+    depends_on: [db_notifications]
+    networks: [backend]
+
+  db_catalogue:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: catalogue
+    volumes: [pg_catalogue:/var/lib/postgresql/data]
+    networks: [backend]
+
+  db_commandes:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: commandes
+    volumes: [pg_commandes:/var/lib/postgresql/data]
+    networks: [backend]
+
+  db_notifications:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: notifications
+    volumes: [pg_notifications:/var/lib/postgresql/data]
+    networks: [backend]
+
+networks:
+  backend:
+
+volumes:
+  pg_catalogue:
+  pg_commandes:
+  pg_notifications:
