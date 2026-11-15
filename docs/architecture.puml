@@ -1,0 +1,28 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontSize 13
+
+actor "Client" as Client
+
+rectangle "Docker Engine" {
+    package "Réseau backend" {
+        
+        component "Catalogue\nFlask :5001" as Catalogue
+        component "Commandes\nFlask :5002" as Commandes
+        component "Notifications\nFlask :5003" as Notifications
+        
+        database "db_catalogue\nPostgreSQL" as DB_Cat
+        database "db_commandes\nPostgreSQL" as DB_Cmd
+        database "db_notifications\nPostgreSQL" as DB_Notif
+    }
+}
+
+Client --> Commandes : "POST /orders"
+Client --> Catalogue : "GET /products"
+Commandes .left.> Catalogue : "Vérifie produit"
+Commandes .right.> Notifications : "POST /notify"
+Catalogue --> DB_Cat
+Commandes --> DB_Cmd
+Notifications --> DB_Notif
+
+@enduml
