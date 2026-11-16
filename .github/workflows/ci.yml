@@ -1,0 +1,46 @@
+
+name: CI - Validation Architecture Microservices
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v3
+
+      - name: Construction des images Docker
+        run: docker compose build
+
+      - name: Démarrage de l'architecture
+        run: |
+          docker compose up -d
+          echo "Attente du démarrage des services..."
+          sleep 20
+
+      - name: Vérification des conteneurs actifs
+        run: docker compose ps
+
+      - name: Test du service Catalogue
+        run: |
+          echo "Test GET /products..."
+          curl -f --retry 10 --retry-connrefused --retry-delay 3 http://localhost:5001/products
+          echo "Catalogue OK"
+
+      - name: Test du service Commandes
+        run: |
+          echo "Test POST /orders..."
+          curl -f -X POST http://localhost:5002/orders \
+            -H "Content-Type: application/json" \
+            -d '{"product_id":1,"quantity":1,"customer":"CI-Test","email":"ci@test.com"}'
+          echo "Commandes OK"
+
+      - name: Nettoyage
+        if: always()
+        run: docker compose down
