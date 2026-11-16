@@ -5,6 +5,8 @@ Enseignant : M. Kais LOUKIL.
 
 Une PME tunisienne vend en ligne des produits artisanaux (cosmétiques naturels, huiles essentielles, savons). Ce dépôt contient un prototype d'architecture microservices conteneurisée, exécuté avec Docker Desktop et Docker Compose.
 
+Rapport complet : [docs/Rapport_Mini_Projet_Cloud_Computing.pdf](docs/Rapport_Mini_Projet_Cloud_Computing.pdf)
+
 ## Architecture
 
 ![Architecture](docs/architecture.jpg)
@@ -55,14 +57,18 @@ curl.exe -X POST http://localhost:5002/orders -H "Content-Type: application/json
 ```
 Les emails envoyés sont visibles sur http://localhost:8025.
 
+## Intégration continue (GitHub Actions)
+Le workflow `.github/workflows/ci.yml` se déclenche à chaque `push` et `pull_request` sur `main` ou `master`. Il construit les images Docker, démarre l'architecture, teste `GET /products` (Catalogue) et `POST /orders` (Commandes), puis arrête les conteneurs. Les exécutions sont visibles dans l'onglet **Actions** du dépôt.
+
 ## Structure du dépôt
 ```
-catalogue/        service Catalogue (app.py, Dockerfile, requirements.txt)
-commandes/        service Commandes
-notifications/    service Notifications
-partie3-app/      application Flask de la Partie 3
-docs/             schéma d'architecture
-captures/         captures d'écran des livrables
+.github/workflows/   workflow CI (ci.yml)
+catalogue/           service Catalogue (app.py, Dockerfile, requirements.txt)
+commandes/           service Commandes
+notifications/       service Notifications
+partie3-app/         application Flask de la Partie 3
+docs/                schéma d'architecture et rapport PDF
+captures/            captures d'écran des livrables
 docker-compose.yml
 ```
 
@@ -80,9 +86,10 @@ Accès : http://localhost:8000
 - Variables d'environnement (`DATABASE_URL`, `CATALOGUE_URL`, `NOTIFICATIONS_URL`, `SMTP_HOST`)
 - Réseau Docker personnalisé (`backend`)
 - Vérification du stock et envoi d'emails de confirmation
+- Intégration continue avec GitHub Actions (build et tests)
 
 ## Captures d'écran
 Voir le dossier `captures/` : Docker Desktop, `hello-world`, build, application, `docker ps`, communication entre microservices, email MailHog, stock insuffisant.
 
 ## Équipe
-Yasmin Moalla khadija abid islem fakhfakh
+Yasmin Moalla, Khadija Abid, Islem Fakhfakh
