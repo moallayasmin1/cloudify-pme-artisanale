@@ -89,7 +89,10 @@ Accès : http://localhost:8000
 - Intégration continue avec GitHub Actions (build et tests)
 
 ## Captures d'écran
-Voir le dossier `captures/` : Docker Desktop, `hello-world`, build, application, `docker ps`, communication entre microservices, email MailHog, stock insuffisant.
+- `captures/partie2/` : Docker Desktop, `hello-world`, dépôt GitHub.
+- `captures/partie3/` : build de l'image, application en fonctionnement.
+- `captures/partie4/` : Docker Desktop (7 services), `docker ps`, produits, commande, communication entre microservices.
+- `captures/bonus-v1/` : email MailHog, stock dans le catalogue, stock insuffisant.
 
 ## Équipe
 Yasmin Moalla, Khadija Abid, Islem Fakhfakh

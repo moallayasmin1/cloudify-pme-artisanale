@@ -27,7 +27,7 @@ def init_db():
     conn.commit(); cur.close(); conn.close()
 
 @app.route("/orders", methods=["POST"])
-def create_order():
+def create_order(): #####تحجز المنتج، تسجّل الطلبية، وتطلب إرسال notification.
     data = request.get_json(force=True)
     product_id = data.get("product_id")
     quantity = int(data.get("quantity", 1))
@@ -42,7 +42,7 @@ def create_order():
     if r.status_code == 409:
         return jsonify({"error": "stock insuffisant"}), 409
 
-    conn = get_conn(); cur = conn.cursor()
+    conn = get_conn(); cur = conn.cursor() ### تسجّل الطلبية
     cur.execute("""INSERT INTO orders (product_id, quantity, customer, customer_email)
                    VALUES (%s,%s,%s,%s) RETURNING id""",
                 (product_id, quantity, customer, email))
@@ -61,7 +61,7 @@ def create_order():
     return jsonify({"order_id": order_id, "status": "created"}), 201
 
 @app.route("/orders")
-def list_orders():
+def list_orders(): #تعرض كل الطلبيات.
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT id, product_id, quantity, customer, customer_email FROM orders ORDER BY id")
     rows = [{"id": r[0], "product_id": r[1], "quantity": r[2], "customer": r[3], "email": r[4]}
